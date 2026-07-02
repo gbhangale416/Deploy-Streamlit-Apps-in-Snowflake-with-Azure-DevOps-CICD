@@ -1,0 +1,6 @@
+name: hello_world
+channels:
+  - snowflake
+dependencies:
+  - python=3.11
+  - streamlit
