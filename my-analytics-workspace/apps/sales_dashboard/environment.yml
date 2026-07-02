@@ -1,0 +1,8 @@
+name: sales_dashboard
+channels:
+  - snowflake
+dependencies:
+  - python=3.11
+  - streamlit
+  - pandas
+  - altair
