@@ -58,3 +58,27 @@ if search_memid:
                 st.code(str(e))
 else:
     st.info("💡 Please provide a valid Member ID in the field above to query logs.")
+
+
+--------------------------------------------------------------------------------------------------------------------------
+import streamlit as st
+from snowflake.snowpark.context import get_active_session
+
+# 1. Fetch values directly from the config block
+target_db = st.secrets["database"]["db_name"]
+target_schema = st.secrets["database"]["schema_name"]
+
+st.title(f"Reading from Target DB: {target_db}")
+
+if st.button("Run Query"):
+    session = get_active_session()
+    
+    # 2. Use the configuration variables dynamically in your query construction
+    query = f"""
+        SELECT * FROM {target_db}.{target_schema}.YOUR_TABLE 
+        WHERE MEMID = ? 
+        LIMIT 10
+    """
+    
+    raw_data = session.sql(query, params=["M10294"]).collect()
+    st.dataframe(raw_data)
