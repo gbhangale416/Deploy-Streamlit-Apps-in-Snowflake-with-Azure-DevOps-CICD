@@ -1,0 +1,107 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+- group: Snowflake-Library
+
+steps:
+
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.11'
+  displayName: 'Set Python Version to 3.11'
+
+- script: |
+    echo "[INFO] Updating pip..."
+    python -m pip install --upgrade pip
+    
+    echo "[INFO] Installing Snowflake CLI..."
+    pip install snowflake-cli
+    
+    echo "[INFO] Verifying Snowflake CLI installation..."
+    snow --version
+  displayName: 'Install Snowflake CLI'
+
+- script: |
+    set -e  # Fail the script immediately if any command fails
+
+    echo "========================================="
+    echo " CONFIGURING SNOWFLAKE ENVIRONMENT       "
+    echo "========================================="
+    export SNOWFLAKE_CONNECTIONS_DEFAULT_ACCOUNT=$(SNOWFLAKE_ACCOUNT)
+    export SNOWFLAKE_CONNECTIONS_DEFAULT_USER=$(SNOWFLAKE_USER)
+    export SNOWFLAKE_CONNECTIONS_DEFAULT_PASSWORD=$(SNOWFLAKE_PASSWORD)
+    export SNOWFLAKE_CONNECTIONS_DEFAULT_ROLE=$(SNOWFLAKE_ROLE)
+    export SNOWFLAKE_CONNECTIONS_DEFAULT_WAREHOUSE=$(SNOWFLAKE_WAREHOUSE)
+    
+    echo "[INFO] Environment variables exported successfully."
+
+    echo "========================================="
+    echo " DETECTING CHANGED STREAMLIT APPS        "
+    echo "========================================="
+    # Get the list of modified files between the last commit and current HEAD
+    CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD || echo "")
+    
+    if [ -z "$CHANGED_FILES" ]; then
+      echo "[WARN] Could not determine git diff. Checking all files in commit."
+      CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r HEAD)
+    fi
+
+    CHANGED_APPS=$(echo "$CHANGED_FILES" | grep '^Streamlit_Apps/Apps/' | cut -d'/' -f3 | sort -u)
+
+    if [ -z "$CHANGED_APPS" ]; then
+      echo "[INFO] No Streamlit apps modified in this commit. Exiting cleanly."
+      exit 0
+    fi
+
+    echo "[INFO] Found the following changed apps to deploy:"
+    echo "$CHANGED_APPS"
+    echo "-----------------------------------------"
+
+    # Save repository root path
+    REPO_ROOT=$(pwd)
+
+    for APP in $CHANGED_APPS
+    do
+        echo ""
+        echo "========================================="
+        echo " DEPLOYING APP: $APP                     "
+        echo "========================================="
+        
+        APP_DIR="Streamlit_Apps/Apps/$APP"
+        
+        if [ ! -d "$APP_DIR" ]; then
+          echo "[WARN] Directory $APP_DIR does not exist (it may have been deleted). Skipping."
+          continue
+        fi
+
+        # Safely navigate into the app directory
+        pushd "$APP_DIR" > /dev/null
+        echo "[INFO] Current Directory: $(pwd)"
+        echo "[INFO] Directory Contents:"
+        ls -la
+
+        echo "[INFO] Running Snowflake Streamlit deployment..."
+        snow streamlit deploy --replace --prune
+
+        if [ $? -eq 0 ]; then
+          echo "[SUCCESS] Successfully deployed application: $APP"
+        else
+          echo "[ERROR] Failed deploying application: $APP"
+          exit 1
+        fi
+
+        # Return safely to the root repository directory
+        popd > /dev/null
+    done
+
+    echo ""
+    echo "========================================="
+    echo " ALL DEPLOYMENTS COMPLETED SUCCESSFULLY   "
+    echo "========================================="
+  displayName: 'Detect and Deploy Changed Streamlit Apps'
