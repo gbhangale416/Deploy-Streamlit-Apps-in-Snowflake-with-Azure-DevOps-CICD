@@ -3,7 +3,7 @@ Based on your structure:
 ```text
 database/
 └── snowflake/
-    └── coEDW/
+    └── Test/
         └── Streamlit_Apps/
             ├── SUPPORT/
             │   ├── Find_User_Details/
@@ -37,7 +37,7 @@ parameters:
 - name: App_Root_Path
   displayName: Streamlit Root Path
   type: string
-  default: database/snowflake/coEDW/Streamlit_Apps
+  default: database/snowflake/Test/Streamlit_Apps
 
 trigger: none
 
@@ -188,11 +188,11 @@ print(data['value'][0]['sourceVersion'] if data['count']>0 else '')
 If the following files changed:
 
 ```
-database/snowflake/coEDW/Streamlit_Apps/SUPPORT/Find_User_Details/streamlit_app.py
+database/snowflake/Test/Streamlit_Apps/SUPPORT/Find_User_Details/streamlit_app.py
 
-database/snowflake/coEDW/Streamlit_Apps/SALES/Sales_Dashboard/environment.yml
+database/snowflake/Test/Streamlit_Apps/SALES/Sales_Dashboard/environment.yml
 
-database/snowflake/coEDW/Streamlit_Apps/HR/Employee_App/snowflake.yml
+database/snowflake/Test/Streamlit_Apps/HR/Employee_App/snowflake.yml
 ```
 
 The pipeline automatically discovers:
@@ -208,13 +208,13 @@ HR/Employee_App
 and executes:
 
 ```
-cd database/snowflake/coEDW/Streamlit_Apps/SUPPORT/Find_User_Details
+cd database/snowflake/Test/Streamlit_Apps/SUPPORT/Find_User_Details
 snow streamlit deploy --replace --prune
 
-cd database/snowflake/coEDW/Streamlit_Apps/SALES/Sales_Dashboard
+cd database/snowflake/Test/Streamlit_Apps/SALES/Sales_Dashboard
 snow streamlit deploy --replace --prune
 
-cd database/snowflake/coEDW/Streamlit_Apps/HR/Employee_App
+cd database/snowflake/Test/Streamlit_Apps/HR/Employee_App
 snow streamlit deploy --replace --prune
 ```
 
