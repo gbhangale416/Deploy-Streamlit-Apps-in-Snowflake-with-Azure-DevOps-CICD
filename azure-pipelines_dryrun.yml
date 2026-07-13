@@ -1,0 +1,110 @@
+parameters:
+  # Root folder to scan for Streamlit apps. Pick one at pipeline run time -
+  # this renders as a selectable option (radio buttons/dropdown) in the
+  # "Run pipeline" UI since it's a string with a fixed set of values.
+  # Add more entries to the "values" list below as new roots are added.
+  - name: streamlitBaseDir
+    type: string
+    default: database/snowflake/coEDW/Streamlit_Apps
+    values:
+      - database/snowflake/coEDW/Streamlit_Apps
+      - database/snowflake/otherDW/Streamlit_Apps
+
+steps:
+- checkout: self
+
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.9.5'
+    disableDownloadFromRegistry: true
+    addToPath: true
+    architecture: 'x64'
+  displayName: 'Set Python Version to 3.9.5'
+
+- script: |
+    echo "[INFO] Updating pip..."
+    python -m pip install --upgrade pip
+
+    echo "[INFO] Installing Snowflake CLI..."
+    pip install snowflake-cli
+
+    echo "[INFO] Verifying Snowflake CLI installation..."
+    snow --version
+  displayName: 'Install Snowflake CLI'
+
+- bash: |
+    mkdir -p ~/.snowflake
+
+    cat > ~/.snowflake/config.toml <<EOF
+    default_connection_name = "ci"
+
+    [connections.ci]
+    account = "$(SNOWFLAKE_ACCOUNT)"
+    user = "$(SNOWFLAKE_USER)"
+    password = "$(SNOWFLAKE_PASSWORD)"
+    warehouse = "$(SNOWFLAKE_WAREHOUSE)"
+    role = "$(SNOWFLAKE_ROLE)"
+    EOF
+
+    chmod 700 ~/.snowflake
+    chmod 600 ~/.snowflake/config.toml
+  displayName: 'Configure Snowflake Connection'
+  env:
+    SNOWFLAKE_ACCOUNT: $(SNOWFLAKE_ACCOUNT)
+    SNOWFLAKE_USER: $(SNOWFLAKE_USER)
+    SNOWFLAKE_PASSWORD: $(SNOWFLAKE_PASSWORD)
+    SNOWFLAKE_WAREHOUSE: $(SNOWFLAKE_WAREHOUSE)
+    SNOWFLAKE_ROLE: $(SNOWFLAKE_ROLE)
+
+- bash: |
+    set -e
+
+    deployFailed=0
+    appCount=0
+    BASE_DIR="$STREAMLIT_BASE_DIR"
+
+    if [ ! -d "$BASE_DIR" ]; then
+      echo "[ERROR] $BASE_DIR not found. Check the path relative to the repo root."
+      exit 1
+    fi
+
+    echo "[INFO] Scanning $BASE_DIR for Streamlit apps (any category, any depth)..."
+
+    # Recursively find every snowflake.yml under this base dir - this works
+    # no matter how many category folders (SUPPORT, Test, ...) or nesting
+    # levels exist, without needing to list them explicitly.
+    while IFS= read -r -d '' manifest; do
+      appDir=$(dirname "$manifest")
+      appName=$(basename "$appDir")
+      categoryName=$(basename "$(dirname "$appDir")")
+      appCount=$((appCount + 1))
+
+      echo "----------------------------------------"
+      echo "[INFO] Deploying Streamlit app: $categoryName/$appName"
+      echo "----------------------------------------"
+
+      pushd "$appDir" > /dev/null
+      echo "[DRY-RUN] Would run: snow streamlit deploy --replace -c ci  (in $appDir)"
+      # snow streamlit deploy --replace -c ci
+      if true; then
+        echo "[INFO] Successfully deployed $categoryName/$appName"
+      else
+        echo "[ERROR] Failed to deploy $categoryName/$appName"
+        deployFailed=1
+      fi
+      popd > /dev/null
+    done < <(find "$BASE_DIR" -type f -name "snowflake.yml" -print0)
+
+    if [ "$appCount" -eq 0 ]; then
+      echo "[WARN] No snowflake.yml files found under $BASE_DIR - nothing was deployed."
+    fi
+
+    if [ "$deployFailed" -ne 0 ]; then
+      echo "[ERROR] One or more Streamlit app deployments failed."
+      exit 1
+    fi
+
+    echo "[INFO] All $appCount Streamlit app(s) deployed successfully."
+  displayName: 'Deploy Streamlit Apps'
+  env:
+    STREAMLIT_BASE_DIR: ${{ parameters.streamlitBaseDir }}
