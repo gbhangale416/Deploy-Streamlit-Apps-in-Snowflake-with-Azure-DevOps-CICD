@@ -1,0 +1,18 @@
+definition_version: 2
+entities:
+  streamlit_app:
+    type: streamlit
+    identifier:
+      database: COEDW_DEV
+      schema: ADMIN
+      name: QUERY_MONITORING
+    title: Query_Monitoring
+    query_warehouse: WH_GEN1_ELT_C4_XS_DEV_TEST
+    compute_pool: STREAMLIT_DEV_COMPUTE_POOL_CPU
+    run_mode: SpcsOnly
+    execute_as: OWNER
+    main_file: streamlit_app.py
+    artifacts:
+      - requirements.txt
+      - streamlit_app.py
+      - .streamlit/config.toml

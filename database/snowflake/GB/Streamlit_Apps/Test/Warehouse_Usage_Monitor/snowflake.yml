@@ -1,0 +1,16 @@
+definition_version: 2
+entities:
+  streamlit_app:
+    type: streamlit
+    identifier:
+      database: COEDW_DEV
+      schema: TEST
+      name: WAREHOUSE_USAGE_MONITOR
+    title: Warehouse_Usage_Monitor
+    query_warehouse: WH_GEN1_ELT_C4_XS_DEV_TEST
+    execute_as: OWNER
+    main_file: streamlit_app.py
+    artifacts:
+      - environment.yml
+      - streamlit_app.py
+      - .streamlit/config.toml
