@@ -1,3 +1,51 @@
+Here is the complete end-to-end code across both required files.
+
+### 1. `snowflake.yml`
+
+This file uses native Snowflake CLI templating (`definition_version: 2`) so that the target database and warehouse are populated dynamically from environment variables at deploy time:
+
+```yaml
+definition_version: 2
+entities:
+  streamlit_app:
+    type: streamlit
+    identifier:
+      database: <% ctx.env.STREAMLIT_DB %>
+      schema: SUPPORT
+      name: LOGIN_INFO
+    title: Login_Info
+    query_warehouse: <% ctx.env.STREAMLIT_WH %>
+    main_file: streamlit_app.py
+    artifacts:
+      - environment.yml
+      - streamlit_app.py
+      - .streamlit/config.toml
+
+```
+
+---
+
+### 2. Azure DevOps Pipeline (`azure-pipelines.yml`)
+
+This pipeline includes:
+
+* Environment and agent pool parameter selection.
+
+
+* Target branch policy validation matching the `co_apps` standard (`DEV_TEST` with `TEAM_BRANCH_NAME`, `PROD` with `MASTER_BRANCH_NAME`).
+
+
+* Python 3.11 setup and Snowflake CLI with cryptography installation.
+
+
+* Snowflake key-pair authentication configured with `authenticator = "SNOWFLAKE_JWT"` using an unencrypted Base64 private key.
+
+
+* The `run_streamlit_deploy` function properly scoped with environment variables mapped to eliminate the bash syntax errors.
+
+
+
+```yaml
 parameters:
   - name: target_environment
     displayName: Environment
@@ -205,3 +253,5 @@ jobs:
           TEST_DB_POSTFIX: $(TEST_DB_POSTFIX)
           TARGET_ENV_DEV_TEST: $(TARGET_ENV_DEV_TEST)
           TARGET_ENV_PROD: $(TARGET_ENV_PROD)
+
+```
