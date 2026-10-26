@@ -163,28 +163,17 @@ jobs:
 
                 pushd "$appDir" > /dev/null
 
-                # 1. Update database in snowflake.yml
-                sed -i -E "s/^([[:space:]]*database:)[[:space:]].*/\1 $DB/" snowflake.yml
+                # Export environment variables mapped to <% ctx.env.* %> in snowflake.yml
+                export STREAMLIT_DB="$DB"
+                export STREAMLIT_WH="$WH"
+                export STREAMLIT_CP="$CP"
 
-                # 2. Update query_warehouse in snowflake.yml
-                sed -i -E "s/^([[:space:]]*query_warehouse:)[[:space:]].*/\1 $WH/" snowflake.yml
-
-                # 3. Update compute_pool in snowflake.yml if it exists
-                if grep -Eq '^[[:space:]]*compute_pool:' snowflake.yml; then
-                  echo "[INFO] Updating compute_pool to $CP"
-                  sed -i -E "s/^([[:space:]]*compute_pool:)[[:space:]].*/\1 $CP/" snowflake.yml
-                fi
-
-                # Deploy the Streamlit app
                 if snow streamlit deploy --replace -c ci; then
                   echo "[INFO] Successfully deployed $SchemaName/$appName"
                 else
                   echo "[ERROR] Failed to deploy $SchemaName/$appName"
                   deployFailed=1
                 fi
-
-                # Reset modified snowflake.yml to keep workspace clean
-                git checkout snowflake.yml > /dev/null 2>&1 || true
 
                 popd > /dev/null
               done < <(find "$BASE_DIR" -type f -name "snowflake.yml" -print0)
@@ -234,12 +223,12 @@ entities:
   streamlit_app:
     type: streamlit
     identifier:
-      database: COEDW_DEV
+      database: <% ctx.env.STREAMLIT_DB %>
       schema: SUPPORT
       name: LOGIN_INFO
     title: Login_Info
-    query_warehouse: WH_GEN1_ELT_C4_XS_DEV_TEST
-    compute_pool: CP_STREAMLIT_DEV
+    query_warehouse: <% ctx.env.STREAMLIT_WH %>
+    compute_pool: <% ctx.env.STREAMLIT_CP %>
     main_file: streamlit_app.py
     artifacts:
       - environment.yml
