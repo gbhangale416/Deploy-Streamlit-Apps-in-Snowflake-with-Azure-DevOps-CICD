@@ -6,7 +6,7 @@ This document contains the complete codebase and technical reference for automat
 
 ## 1. Streamlit App Manifest Configuration (`snowflake.yml`)
 
-Place this file in each application's root directory (e.g., `database/snowflake/coEDW/Streamlit_Apps/SUPPORT/LOGIN_INFO/snowflake.yml`). It uses Snowflake CLI `definition_version: 2` with dynamic templating placeholders (`<% ctx.env.* %>`).
+Place this file in each application's root directory (e.g., `database/snowflake/coGB/Streamlit_Apps/SUPPORT/LOGIN_INFO/snowflake.yml`). It uses Snowflake CLI `definition_version: 2` with dynamic templating placeholders (`<% ctx.env.* %>`).
 
 ```yaml
 definition_version: 2
@@ -92,9 +92,9 @@ parameters:
   - name: streamlitBaseDir
     displayName: Streamlit Root Path
     type: string
-    default: database/snowflake/coEDW/Streamlit_Apps
+    default: database/snowflake/coGB/Streamlit_Apps
     values:
-      - database/snowflake/coEDW/Streamlit_Apps
+      - database/snowflake/coGB/Streamlit_Apps
 
 trigger: none
 
@@ -102,7 +102,7 @@ variables:
   - group: Snowflake_streamlit
 
 jobs:
-  - job: coedw_Analytics_streamlit
+  - job: coGB_Analytics_streamlit
     timeoutInMinutes: 240
 
     pool:
@@ -322,7 +322,7 @@ jobs:
 
 ### Step 1: Navigate to Azure DevOps
 1. Go to **Azure DevOps** > **Pipelines**.
-2. Select pipeline: `coedw_Analytics_streamlit`.
+2. Select pipeline: `coGB_Analytics_streamlit`.
 3. Click **Run pipeline** in the top-right corner.
 
 ### Step 2: Configure Parameters
@@ -331,7 +331,7 @@ jobs:
 | **Branch** | `feature/*` or `main`/`master` | Must match target environment policy (`DEV_TEST` requires team branch; `PROD` requires master branch). |
 | **`target_environment`** | `DEV_TEST` or `PROD` | `DEV_TEST` deploys sequentially to `dev` then `tst`. `PROD` deploys directly to `prd`. |
 | **`agentPoolName`** | Matching Linux pool | Select `dev-devops-linux-agent-pool`, `tst-devops-linux-agent-pool`, or `prd-devops-linux-agent-pool`. |
-| **`streamlitBaseDir`** | Directory path | Defaults to `database/snowflake/coEDW/Streamlit_Apps`. Subpaths can be specified to deploy a single app. |
+| **`streamlitBaseDir`** | Directory path | Defaults to `database/snowflake/coGB/Streamlit_Apps`. Subpaths can be specified to deploy a single app. |
 
 ### Step 3: Trigger and Verify
 1. Click **Run**.
@@ -343,8 +343,8 @@ jobs:
    ```
 3. Verify the entities in Snowflake:
    ```sql
-   SHOW STREAMLITS IN SCHEMA COEDW_DEV.SUPPORT;
-   SHOW STREAMLITS IN SCHEMA COEDW_TST.SUPPORT;
+   SHOW STREAMLITS IN SCHEMA coGB_DEV.SUPPORT;
+   SHOW STREAMLITS IN SCHEMA coGB_TST.SUPPORT;
    ```
 
 ---
